@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://android.com"
+    package="com.example.nativechat">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="false"
+        android:label="NativeChat"
+        android:icon="@mipmap/ic_launcher"
+        android:hasCode="false"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+
+        <activity android:name="android.app.NativeActivity"
+            android:label="NativeChat"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="true">
+            <meta-data android:name="android.app.lib_name" android:value="nativechat" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
