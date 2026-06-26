@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. 가상 환경 리눅스로 C++ 프로젝트 소스 파일 체크아웃
+    # 1. GitHub 가상 서버 리눅스로 C++ 프로젝트 소스 파일 다운로드
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    # 2. 빌드 환경에 JDK 17 및 Gradle 캐시 설정
+    # 2. 빌드 환경에 JDK 17 및 Gradle 자동 캐시 구성
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -23,24 +23,52 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    # 3. NDK 25 및 CMake 빌드 바이너리 도구 팩 강제 설치
+    # 3. NDK 25 및 CMake 빌드 바이너리 패키지 다운로드
     - name: Install Android SDK, NDK, and CMake
       run: |
         echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1"
 
-    # 4. gradlew 파일이 없을 경우 시스템 내장 gradle을 호출하여 래퍼 파일 세트를 즉시 자동 복원 생성
+    # 4. Manifest 유실 에러 원천 차단: 올바른 NDK 하위 경로에 AndroidManifest.xml 강제 자동 생성
+    - name: Auto Reconstruct Android Manifest File Structure
+      run: |
+        mkdir -p app/src/main
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://android.com"
+            package="com.example.nativechat">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <application
+                android:allowBackup="false"
+                android:label="NativeChat"
+                android:hasCode="false"
+                android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                <activity android:name="android.app.NativeActivity"
+                    android:label="NativeChat"
+                    android:configChanges="orientation|keyboardHidden|screenSize"
+                    android:exported="true">
+                    <meta-data android:name="android.app.lib_name" android:value="nativechat" />
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+    # 5. gradlew 파일이 누락된 경우를 대비한 래퍼 스크립트 복원 공정
     - name: Generate Missing Gradle Wrapper
       run: gradle wrapper
 
-    # 5. 복원된 gradlew 실행 파일에 리눅스 권한 부여
+    # 6. 복원된 gradlew 구동 파일에 리눅스 실행 권한 주입
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
 
-    # 6. 순수 Native C++ 코드 기반 안드로이드 최종 APK 컴파일 수행
+    # 7. 순수 Native C++ 코드 기반 최종 안드로이드 무에셋 APK 패키징 컴파일
     - name: Build Android Debug APK
       run: ./gradlew assembleDebug
 
-    # 7. 컴파일 완성된 APK를 GitHub 웹 화면 다운로드 아티팩트로 전송
+    # 8. 완성된 결과물(.apk)을 GitHub 액션 웹 대시보드 다운로드 링크로 최종 업로드
     - name: Upload Build Artifact APK
       uses: actions/upload-artifact@v4
       with:
