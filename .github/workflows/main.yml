@@ -1,0 +1,45 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. GitHub 서버 가상 환경으로 C++ 소스 코드 체크아웃
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    # 2. 안드로이드 NDK 빌드 시스템 구동을 위한 Java 17(JDK) 환경 설정
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    # 3. 별도의 에셋/아이콘 없이 순수 NativeActivity 컴파일을 위한 NDK 및 CMake 자동 설치
+    - name: Install Android SDK, NDK, and CMake
+      run: |
+        echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1"
+
+    # 4. 리눅스 러너 환경에서 안드로이드 빌드 명령어(gradlew) 실행 권한 부여
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x gradlew
+
+    # 5. C++ 코드 빌드 및 최종 안드로이드 디버그 APK 파일 생성
+    - name: Build Android Debug APK
+      run: ./gradlew assembleDebug
+
+    # 6. 빌드가 완료된 APK 결과물을 GitHub 웹 화면에서 다운로드할 수 있도록 보관
+    - name: Upload Build Artifact APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: NativeChat-NoAsset-APK
+        path: app/build/outputs/apk/debug/app-debug.apk
+
